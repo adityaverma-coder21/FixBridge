@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FixBridge — Hostel Repair Companion</title>
+
+  <style>
+    /* =========================================================
+       DESIGN TOKENS & RESET (Minimalist Light Theme)
+    ========================================================== */
+    :root {
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --border: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --accent: #2563EB;
+      --accent-hover: #1D4ED8;
+      --accent-soft: #EFF6FF;
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    button, input, select {
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* =========================================================
+       LAYOUT CONTAINER (Centered max-width: 680px)
+    ========================================================== */
+    .app-shell {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px 16px 48px;
+    }
+
+    /* =========================================================
+       COMPACT HEADER & TOP 3-TAB NAVIGATION
+    ========================================================== */
+    .app-header {
+      margin-bottom: 16px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .brand-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .main-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: #E2E8F0;
+      padding: 4px;
+      border-radius: 12px;
+      margin-bottom: 22px;
+    }
+
+    .main-tab-btn {
+      border: none;
+      background: transparent;
+      padding: 10px 8px;
+      border-radius: 9px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .main-tab-btn:hover {
+      color: var(--text);
+    }
+
+    .main-tab-btn.active {
+      background: var(--surface);
+      color: var(--accent);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.18s ease-out;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================================
+       SHARED UI PRIMITIVES (Cards, Inputs, Buttons)
+    ========================================================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .input-field, .select-field {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface);
+      font-size: 0.95rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .input-field:focus, .select-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .input-field::placeholder {
+      color: #94A3B8;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--border-strong);
+    }
+
+    .btn-secondary:hover {
+      background: #F1F5F9;
+    }
+
+    /* =========================================================
+       TAB 1: NEARBY SHOPS
+    ========================================================== */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 10px;
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: #F1F5F9;
+      color: var(--text-muted);
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-clear.visible {
+      display: inline-flex;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Authorized / Unauthorized Switchable Toggle */
+    .segmented-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #E2E8F0;
+      padding: 3px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+
+    .toggle-btn {
+      border: none;
+      background: transparent;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .toggle-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    .shop-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .shop-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .shop-title-group {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .rank-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+
+    .shop-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .shop-rating {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .shop-rating span {
+      color: #D97706;
+      margin-right: 2px;
+    }
+
+    .shop-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .shop-specialty {
+      font-size: 0.86rem;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .shop-price {
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .shop-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    /* =========================================================
+       TAB 2: DIAGNOSE
+    ========================================================== */
+    .step-heading {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+
+    .device-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .device-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .device-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 11px 8px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .device-btn:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .device-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .custom-issue-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .cause-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .cause-box p {
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .checklist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .check-item:hover {
+      background: var(--bg);
+    }
+
+    .check-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--accent);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .check-text {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .check-item.done .check-text {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    .tool-note {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .diag-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 440px) {
+      .diag-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* =========================================================
+       TAB 3: SELF REPAIR
+    ========================================================== */
+    .guide-header {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .guide-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .guide-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .guide-section {
+      margin-bottom: 20px;
+    }
+
+    .guide-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .simple-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .simple-list li {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-size: 0.92rem;
+      padding: 6px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+
+    .simple-list li:last-child {
+      border-bottom: none;
+    }
+
+    .item-muted {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .station-tag {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* YouTube Recommendation Card */
+    .yt-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--bg);
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .yt-card:hover {
+      border-color: var(--accent);
+      background: var(--surface);
+    }
+
+    .yt-icon {
+      width: 48px;
+      height: 34px;
+      border-radius: 8px;
+      background: #DC2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .yt-meta {
+      min-width: 0;
+    }
+
+    .yt-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .yt-channel {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* Collapsible Step-by-Step Instructions */
+    .collapsible-btn {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 11px 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background-color 0.15s ease;
+    }
+
+    .collapsible-btn:hover {
+      background: #F1F5F9;
+    }
+
+    .steps-ol {
+      margin-top: 12px;
+      padding-left: 20px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .steps-ol.open {
+      display: flex;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- =======================================================
+         COMPACT HEADER
+    ======================================================== -->
+    <header class="app-header">
+      <h1 class="brand-title">FixBridge</h1>
+      <span class="brand-subtitle">Hostel Repair Companion</span>
+    </header>
+
+    <!-- =======================================================
+         TOP 3 SWITCHABLE TABS
+    ======================================================== -->
+    <nav class="main-tabs" role="tablist" aria-label="Main Navigation">
+      <button class="main-tab-btn active" id="tab-shops" role="tab" aria-selected="true" onclick="switchTab('shops')">
+        Nearby Shops
+      </button>
+      <button class="main-tab-btn" id="tab-diagnose" role="tab" aria-selected="false" onclick="switchTab('diagnose')">
+        Diagnose
+      </button>
+      <button class="main-tab-btn" id="tab-repair" role="tab" aria-selected="false" onclick="switchTab('repair')">
+        Self Repair
+      </button>
+    </nav>
+
+    <!-- =======================================================
+         TAB 1: NEARBY SHOPS
+    ======================================================== -->
+    <section id="panel-shops" class="tab-panel active" role="tabpanel">
+      <!-- Search Box -->
+      <div class="search-wrap">
+        <input
+          type="text"
+          id="shop-search"
+          class="input-field"
+          placeholder="Type your device or issue (e.g. laptop fan, phone screen, battery)..."
+          oninput="handleShopSearch(this.value)"
+        />
+        <button id="shop-search-clear" class="search-clear" onclick="clearShopSearch()" aria-label="Clear search">×</button>
+      </div>
+
+      <!-- Minimal Quick-Fill Chips -->
+      <div class="chip-row" id="quick-chips"></div>
+
+      <!-- 2-Way Switchable Toggle: Authorized vs Unauthorized -->
+      <div class="segmented-toggle" role="tablist" aria-label="Shop Type">
+        <button id="toggle-authorized" class="toggle-btn active" onclick="setShopType('authorized')">
+          Authorized
+        </button>
+        <button id="toggle-unauthorized" class="toggle-btn" onclick="setShopType('unauthorized')">
+          Unauthorized
+        </button>
+      </div>
+
+      <!-- Active Shop List -->
+      <div id="shops-list" class="stack"></div>
+    </section>
+
+    <!-- =======================================================
+         TAB 2: DIAGNOSE
+    ======================================================== -->
+    <section id="panel-diagnose" class="tab-panel" role="tabpanel">
+      <div class="stack">
+        <!-- Step 1: What's the problem? -->
+        <div class="card">
+          <h2 class="step-heading">1. What's the problem?</h2>
+
+          <span class="label">Select Device</span>
+          <div class="device-grid" id="device-buttons"></div>
+
+          <label class="label" for="issue-select">Choose Common Issue</label>
+          <select id="issue-select" class="select-field" onchange="selectIssue(this.value)"></select>
+
+          <div class="custom-issue-row">
+            <input
+              type="text"
+              id="custom-issue-input"
+              class="input-field"
+              placeholder="Or describe your issue..."
+              onkeydown="if(event.key==='Enter') matchCustomIssue()"
+            />
+            <button class="btn btn-primary" onclick="matchCustomIssue()">Match</button>
+          </div>
+        </div>
+
+        <!-- Step 2: How to check it -->
+        <div id="diagnose-step-2" class="card" style="display: none;"></div>
+      </div>
+    </section>
+
+    <!-- =======================================================
+         TAB 3: SELF REPAIR
+    ======================================================== -->
+    <section id="panel-repair" class="tab-panel" role="tabpanel">
+      <div class="stack">
+        <!-- Guide Selector -->
+        <div>
+          <label class="label" for="repair-select">Select Repair Guide</label>
+          <select id="repair-select" class="select-field" onchange="selectRepairGuide(this.value)"></select>
+        </div>
+
+        <!-- Single Clean Guide Card -->
+        <div id="repair-card" class="card"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- =========================================================
+       VANILLA JAVASCRIPT DATA & LOGIC
+  ========================================================== -->
+  <script>
+    /* ==========================================================
+       1. DATA: NEARBY SHOPS (5 Authorized + 5 Unauthorized)
+    ========================================================== */
+    const QUICK_CHIPS = ['Phone Screen', 'Laptop Fan', 'Battery', 'Charging Port'];
+
+    const SHOPS = [
+      // --- 5 AUTHORIZED SERVICE CENTERS ---
+      {
+        id: 'auth-apple',
+        type: 'authorized',
+        name: 'Apple Authorized Service (iCare)',
+        rating: 4.8,
+        location: 'Central Mall, Ground Floor • 3.2 km',
+        specialty: 'iPhone screen, MacBook battery, charging port',
+        price: '₹2,500+',
+        phone: '+919811011201',
+        keywords: ['apple', 'iphone', 'macbook', 'screen', 'display', 'battery', 'charging', 'port', 'laptop', 'phone', 'airpods']
+      },
+      {
+        id: 'auth-samsung',
+        type: 'authorized',
+        name: 'Samsung Authorized Care Center',
+        rating: 4.7,
+        location: 'Sector 4 Market • 1.8 km',
+        specialty: 'Phone screen, battery replacement, USB-C port',
+        price: '₹1,200+',
+        phone: '+919811011202',
+        keywords: ['samsung', 'phone', 'screen', 'cracked', 'display', 'battery', 'charging', 'port', 'usb', 'android']
+      },
+      {
+        id: 'auth-lenovo-hp',
+        type: 'authorized',
+        name: 'Lenovo & HP Authorized Service Hub',
+        rating: 4.6,
+        location: 'Tech Park Road • 2.4 km',
+        specialty: 'Laptop fan, overheating, keyboard, laptop battery',
+        price: '₹950+',
+        phone: '+919811011203',
+        keywords: ['lenovo', 'hp', 'laptop', 'fan', 'overheating', 'thermal', 'battery', 'charger', 'ram', 'ssd', 'keyboard']
+      },
+      {
+        id: 'auth-dell',
+        type: 'authorized',
+        name: 'Dell Exclusive Service Center',
+        rating: 4.5,
+        location: 'NH-48 Commercial Plaza • 2.9 km',
+        specialty: 'Laptop motherboard, cooling fan, RAM/SSD, adapter',
+        price: '₹1,100+',
+        phone: '+919811011204',
+        keywords: ['dell', 'laptop', 'fan', 'overheating', 'charger', 'adapter', 'battery', 'ram', 'ssd', 'screen']
+      },
+      {
+        id: 'auth-xiaomi',
+        type: 'authorized',
+        name: 'Xiaomi & Realme Service Center',
+        rating: 4.6,
+        location: 'Main City Complex • 1.5 km',
+        specialty: 'Phone battery, fast-charging port, display combo',
+        price: '₹700+',
+        phone: '+919811011205',
+        keywords: ['xiaomi', 'mi', 'redmi', 'realme', 'phone', 'battery', 'charging', 'port', 'screen', 'cracked', 'earphones']
+      },
+
+      // --- 5 UNAUTHORIZED / LOCAL REPAIR SHOPS ---
+      {
+        id: 'local-campus',
+        type: 'unauthorized',
+        name: 'Campus Tech Care',
+        rating: 4.8,
+        location: 'Main College Gate • 0.3 km',
+        specialty: 'Laptop fan cleaning, thermal paste, RAM/SSD, battery',
+        price: '₹250+',
+        phone: '+919873200101',
+        keywords: ['laptop', 'fan', 'overheating', 'thermal', 'ram', 'ssd', 'battery', 'phone', 'screen', 'charging']
+      },
+      {
+        id: 'local-sharma',
+        type: 'unauthorized',
+        name: 'Sharma Mobile & Laptop Repair',
+        rating: 4.6,
+        location: 'Hostel Road Market • 0.5 km',
+        specialty: 'Phone screen, charging port, battery swap',
+        price: '₹200+',
+        phone: '+919873200102',
+        keywords: ['phone', 'screen', 'cracked', 'display', 'charging', 'port', 'loose', 'battery', 'laptop', 'charger']
+      },
+      {
+        id: 'local-quickfix',
+        type: 'unauthorized',
+        name: 'QuickFix Electronics',
+        rating: 4.5,
+        location: 'Sector 4 Market • 1.2 km',
+        specialty: 'Chargers, power adapters, battery & port repairs',
+        price: '₹150+',
+        phone: '+919873200103',
+        keywords: ['charger', 'cable', 'adapter', 'charging', 'port', 'battery', 'phone', 'laptop', 'earphones']
+      },
+      {
+        id: 'local-hostelgate',
+        type: 'unauthorized',
+        name: 'Hostel Gate Gadget Hub',
+        rating: 4.7,
+        location: 'Back Gate Lane • 0.4 km',
+        specialty: 'Earphone jack repair, phone glass, quick port clean',
+        price: '₹80+',
+        phone: '+919873200104',
+        keywords: ['earphones', 'earphone', 'headphone', 'jack', 'wire', 'audio', 'charging', 'port', 'phone', 'screen', 'cable']
+      },
+      {
+        id: 'local-metro',
+        type: 'unauthorized',
+        name: 'Metro Micro-Soldering Lab',
+        rating: 4.9,
+        location: 'Bus Stand Road • 1.1 km',
+        specialty: 'Board soldering, DC jack, laptop fan & earphone wires',
+        price: '₹300+',
+        phone: '+919873200105',
+        keywords: ['soldering', 'motherboard', 'laptop', 'fan', 'dc jack', 'charging', 'port', 'earphones', 'jack', 'battery', 'ram', 'ssd']
+      }
+    ];
+
+    /* ==========================================================
+       2. DATA: DIAGNOSE FLOWS (TAB 2)
+    ========================================================== */
+    const DEVICES = ['Phone', 'Laptop', 'Earphones', 'Charger'];
+
+    const DIAGNOSE_GUIDES = {
+      Phone: [
+        {
+          id: 'phone-port',
+          label: 'Loose charging port or not charging',
+          cause: 'Compacted pocket lint inside the charging port usually prevents the cable from clicking in fully, or the cable itself is worn out.',
+          searchQuery: 'Charging Port',
+          repairId: 'loose-charging-port',
+          steps: [
+            { text: 'Plug the USB Voltage Tester between your charger and phone to check if current (Amps) flows steadily.', tool: 'Tool: USB Voltage Tester' },
+            { text: 'Test with a spare cable at the station. If current jumps back to 1.5A+, only your cable is faulty.', tool: 'Tool: Station Test Cable' },
+            { text: 'Power off your phone and look inside the port under light for packed lint or bent pins.', tool: 'Tool: Magnifier & Plastic Pick' }
+          ]
+        },
+        {
+          id: 'phone-battery',
+          label: 'Battery draining fast or phone not turning on',
+          cause: 'A degraded lithium-ion battery can no longer hold charge properly, or the battery voltage has dropped too low to boot.',
+          searchQuery: 'Battery',
+          repairId: 'phone-battery',
+          steps: [
+            { text: 'Lay the phone flat and check if the back panel is slightly bulging (sign of a swollen battery).', tool: 'Check: Visual Inspection' },
+            { text: 'Connect through the USB Voltage Tester for 5 minutes. Very low draw (<0.3A) with a blank screen points to a dead cell.', tool: 'Tool: USB Voltage Tester' },
+            { text: 'Hold Power + Volume Down for 15 seconds to rule out a frozen software crash.', tool: 'Check: Hard Reboot' }
+          ]
+        },
+        {
+          id: 'phone-screen',
+          label: 'Cracked screen or touch not working',
+          cause: 'Impact damage has fractured the display digitizer or loosened the internal screen flex connector.',
+          searchQuery: 'Phone Screen',
+          repairId: 'phone-screen',
+          steps: [
+            { text: 'Plug into the USB Voltage Tester or call your number to verify the phone still powers on and vibrates.', tool: 'Tool: USB Voltage Tester' },
+            { text: 'Drag an app icon across all corners to map out dead touch zones.', tool: 'Check: Touch Grid Test' },
+            { text: 'Inspect the outer metal frame for bends that could crack a replacement screen.', tool: 'Tool: Magnifier' }
+          ]
+        }
+      ],
+      Laptop: [
+        {
+          id: 'laptop-fan',
+          label: 'Overheating or loud grinding fan',
+          cause: 'Dust buildup inside the cooling vents blocks airflow, and dried-out thermal paste prevents heat from leaving the CPU.',
+          searchQuery: 'Laptop Fan',
+          repairId: 'laptop-fan',
+          steps: [
+            { text: 'Feel the exhaust vent while running a heavy task. Weak airflow with high fan noise confirms dust blockage.', tool: 'Check: Airflow Test' },
+            { text: 'Shut down, unplug power, and open the bottom panel using the matching PH0/Torx bit.', tool: 'Tool: Precision Screwdriver' },
+            { text: 'Hold the fan blades gently and blow out trapped dust from the heatsink fins.', tool: 'Tool: Air Blower' }
+          ]
+        },
+        {
+          id: 'laptop-slow',
+          label: 'Laptop very slow or freezing often',
+          cause: 'Your RAM is maxing out during multitasking, or an older hard drive is bottlenecking Windows/apps.',
+          searchQuery: 'Laptop RAM SSD',
+          repairId: 'laptop-ram-ssd',
+          steps: [
+            { text: 'Open Task Manager (Ctrl + Shift + Esc) → Performance tab to see if Memory or Disk is stuck near 100%.', tool: 'Check: Task Manager' },
+            { text: 'Power off and unscrew the bottom cover to check if an empty RAM or M.2 SSD slot is available.', tool: 'Tool: Precision Screwdriver' },
+            { text: 'Unclip and firmly reseat the existing RAM stick if you are seeing random freezes.', tool: 'Tool: ESD Wrist Strap' }
+          ]
+        }
+      ],
+      Earphones: [
+        {
+          id: 'earphone-jack',
+          label: 'One side not working or crackling audio',
+          cause: 'The thin internal copper wire right behind the 3.5mm plug has snapped from repeated pocket bending.',
+          searchQuery: 'Earphones',
+          repairId: 'earphone-jack',
+          steps: [
+            { text: 'Test the earphones on another phone or laptop to confirm the problem is not the phone jack.', tool: 'Check: Swap Device' },
+            { text: 'Play audio and gently wiggle the wire near the 3.5mm plug to locate the exact break point.', tool: 'Check: Flex Test' },
+            { text: 'Set the Multimeter to Resistance (200 Ω) and probe the jack rings; "OL" confirms an open broken wire.', tool: 'Tool: Digital Multimeter' }
+          ]
+        }
+      ],
+      Charger: [
+        {
+          id: 'charger-dead',
+          label: 'Charger not supplying power or intermittent',
+          cause: 'Internal wire fracture near the connector end or a blown wall adapter circuit.',
+          searchQuery: 'Charger',
+          repairId: 'loose-charging-port',
+          steps: [
+            { text: 'Plug the USB Voltage Tester directly into the wall brick (no cable). It should read ~5.0V.', tool: 'Tool: USB Voltage Tester' },
+            { text: 'For laptop barrel chargers, set the Multimeter to 20V DC and check tip voltage (usually 19V–20V).', tool: 'Tool: Digital Multimeter' },
+            { text: 'Gently bend the cable ends while watching the meter; sudden drops to 0V confirm a broken wire.', tool: 'Tool: USB Voltage Tester' }
+          ]
+        }
+      ]
+    };
+
+    /* ==========================================================
+       3. DATA: SELF REPAIR GUIDES (TAB 3)
+    ========================================================== */
+    const REPAIR_GUIDES = [
+      {
+        id: 'laptop-fan',
+        title: 'Laptop Fan Cleaning & Thermal Paste',
+        meta: 'Easy • ~25 mins',
+        parts: [
+          { name: 'Thermal Paste Syringe', cost: '₹250 – ₹400' },
+          { name: 'Isopropyl Alcohol Swabs', cost: '₹30' }
+        ],
+        tools: [
+          { name: 'Precision Screwdriver Set', atStation: true },
+          { name: 'Plastic Pry Spudger', atStation: true },
+          { name: 'Air Blower & Soft Brush', atStation: true }
+        ],
+        video: {
+          title: 'How to Clean Laptop Fan & Apply Thermal Paste (Step-by-Step)',
+          channel: 'YouTube Tutorial • ~10 min watch',
+          query: 'how to clean laptop fan and replace thermal paste step by step'
+        },
+        steps: [
+          'Shut down the laptop completely and unplug the charger.',
+          'Remove the bottom panel screws and gently unclip the cover using a plastic spudger.',
+          'Disconnect the internal battery cable from the motherboard before touching anything else.',
+          'Hold the fan blades still and blow/brush out all dust from the fan and copper fins.',
+          'If replacing thermal paste, unscrew the heatsink, wipe old paste with alcohol, apply a pea-sized dot, and reassemble.'
+        ]
+      },
+      {
+        id: 'phone-battery',
+        title: 'Phone Battery Replacement',
+        meta: 'Moderate • ~35 mins',
+        parts: [
+          { name: 'Model-Matched Replacement Battery', cost: '₹600 – ₹1,200' },
+          { name: 'B-7000 Back Cover Glue', cost: '₹100' }
+        ],
+        tools: [
+          { name: 'Precision Screwdriver (PH000)', atStation: true },
+          { name: 'Suction Cup & Plastic Pry Cards', atStation: true },
+          { name: 'Low-Heat Pack / Hair Dryer', atStation: true }
+        ],
+        video: {
+          title: 'Smartphone Battery Replacement Beginner Guide',
+          channel: 'YouTube Tutorial • ~11 min watch',
+          query: 'smartphone battery replacement step by step beginner guide'
+        },
+        steps: [
+          'Discharge battery below 25%, power off the phone, and remove the SIM tray.',
+          'Warm the back edges gently for 60 seconds to soften the adhesive and lift with a suction cup + plastic card.',
+          'Unscrew the cover plate and disconnect the battery flex cable first.',
+          'Pull the adhesive strips gently to remove the old battery (never puncture it with metal).',
+          'Connect the new battery, test power-on, and reseal the back cover with a thin layer of B-7000 glue.'
+        ]
+      },
+      {
+        id: 'loose-charging-port',
+        title: 'Loose Charging Port Cleaning',
+        meta: 'Easy • ~5 mins',
+        parts: [
+          { name: 'No spare parts needed', cost: '₹0' }
+        ],
+        tools: [
+          { name: 'LED Magnifier', atStation: true },
+          { name: 'ESD Plastic Pick / Tweezers', atStation: true },
+          { name: 'Air Blower & USB Voltage Tester', atStation: true }
+        ],
+        video: {
+          title: 'Safely Clean a Loose USB-C / Phone Charging Port',
+          channel: 'YouTube Tutorial • ~4 min watch',
+          query: 'how to safely clean phone usb c charging port loose cable'
+        },
+        steps: [
+          'Power off your phone completely so no voltage is on the pins.',
+          'Inspect the bottom of the port under light to spot compressed lint.',
+          'Gently scoop lint out along the outer walls using the plastic pick (avoid bending the center pin tongue).',
+          'Blow out loose dust with the air blower and test the cable click + amperage on the USB Voltage Tester.'
+        ]
+      },
+      {
+        id: 'earphone-jack',
+        title: 'Broken Earphone Jack Soldering',
+        meta: 'Moderate • ~20 mins',
+        parts: [
+          { name: '3.5mm Replacement Audio Jack', cost: '₹40 – ₹80' },
+          { name: 'Heat Shrink Tube', cost: '₹15' }
+        ],
+        tools: [
+          { name: 'Soldering Iron & Solder Wire', atStation: true },
+          { name: 'Wire Stripper & Clamp', atStation: true },
+          { name: 'Digital Multimeter', atStation: true }
+        ],
+        video: {
+          title: 'How to Solder a New 3.5mm Earphone Jack',
+          channel: 'YouTube Tutorial • ~8 min watch',
+          query: 'how to solder 3.5mm earphone jack wire repair tutorial'
+        },
+        steps: [
+          'Cut off the damaged jack and slide the new metal jack sleeve onto the cable first.',
+          'Strip 1.5 cm of outer insulation to expose the colored wires.',
+          'Tin the wire tips with solder to burn off the thin enamel coating.',
+          'Solder Ground, Left, and Right wires to the matching lugs on the new jack.',
+          'Test both ears on your phone before screwing the metal barrel back on.'
+        ]
+      },
+      {
+        id: 'laptop-ram-ssd',
+        title: 'Laptop RAM / SSD Upgrade',
+        meta: 'Easy • ~15 mins',
+        parts: [
+          { name: 'DDR4/DDR5 SO-DIMM RAM (8GB/16GB)', cost: '₹1,600 – ₹3,400' },
+          { name: 'M.2 NVMe SSD (500GB/1TB)', cost: '₹2,800 – ₹5,000' }
+        ],
+        tools: [
+          { name: 'Precision Screwdriver Set', atStation: true },
+          { name: 'Plastic Pry Spudger', atStation: true },
+          { name: 'ESD Anti-Static Wrist Strap', atStation: true }
+        ],
+        video: {
+          title: 'How to Upgrade Laptop RAM & NVMe SSD Easily',
+          channel: 'YouTube Tutorial • ~7 min watch',
+          query: 'how to upgrade laptop ram and nvme ssd step by step'
+        },
+        steps: [
+          'Shut down, unplug power, and open the laptop bottom panel.',
+          'Disconnect the internal battery cable and wear the ESD wrist strap.',
+          'Insert RAM at a 30° angle and press flat until side clips snap; insert M.2 SSD at 20° and secure the tiny screw.',
+          'Reconnect the battery, close the panel, and verify the upgrade in Task Manager.'
+        ]
+      },
+      {
+        id: 'phone-screen',
+        title: 'Phone Screen Replacement',
+        meta: 'Hard • ~50 mins',
+        parts: [
+          { name: 'Replacement Display Combo (with frame)', cost: '₹1,200 – ₹4,500' },
+          { name: 'B-7000 Display Adhesive', cost: '₹100' }
+        ],
+        tools: [
+          { name: 'Precision Screwdriver Set', atStation: true },
+          { name: 'Suction Cup, Pry Cards & Heat Pack', atStation: true },
+          { name: 'ESD Tweezers', atStation: true }
+        ],
+        video: {
+          title: 'Phone Screen Replacement Complete Beginner Walkthrough',
+          channel: 'YouTube Tutorial • ~14 min watch',
+          query: 'smartphone screen replacement step by step beginner guide'
+        },
+        steps: [
+          'Power off the phone, eject the SIM tray, and tape over shattered glass to prevent splinters.',
+          'Remove the back cover and disconnect the battery flex cable first.',
+          'Disconnect the broken display flex, warm the front edges, and lift out the old screen.',
+          'Clean all old glue from the frame and dry-test the new screen BEFORE applying any adhesive.',
+          'Apply a thin bead of glue around the frame, seat the new display, and reassemble.'
+        ]
+      }
+    ];
+
+    /* ==========================================================
+       4. APPLICATION STATE
+    ========================================================== */
+    const state = {
+      activeTab: 'shops',
+      shopType: 'authorized', // 'authorized' | 'unauthorized'
+      shopQuery: '',
+      selectedDevice: 'Phone',
+      selectedIssueId: 'phone-port',
+      checkedSteps: {},
+      selectedRepairId: 'laptop-fan',
+      repairStepsOpen: false
+    };
+
+    /* ==========================================================
+       5. MAIN TAB SWITCHER
+    ========================================================== */
+    function switchTab(tab) {
+      state.activeTab = tab;
+
+      ['shops', 'diagnose', 'repair'].forEach((t) => {
+        const btn = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`panel-${t}`);
+        const isActive = t === tab;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        panel.classList.toggle('active', isActive);
+      });
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* ==========================================================
+       6. TAB 1: NEARBY SHOPS LOGIC
+    ========================================================== */
+    function renderQuickChips() {
+      const container = document.getElementById('quick-chips');
+      container.innerHTML = QUICK_CHIPS.map((chip) => {
+        const isActive = state.shopQuery.trim().toLowerCase() === chip.toLowerCase();
+        return `<button class="chip ${isActive ? 'active' : ''}" onclick="toggleQuickChip('${chip}')">${chip}</button>`;
+      }).join('');
+    }
+
+    function toggleQuickChip(chip) {
+      const input = document.getElementById('shop-search');
+      if (state.shopQuery.trim().toLowerCase() === chip.toLowerCase()) {
+        clearShopSearch();
+      } else {
+        input.value = chip;
+        handleShopSearch(chip);
+      }
+    }
+
+    function handleShopSearch(value) {
+      state.shopQuery = value;
+      document.getElementById('shop-search-clear').classList.toggle('visible', value.trim().length > 0);
+      renderQuickChips();
+      renderShops();
+    }
+
+    function clearShopSearch() {
+      const input = document.getElementById('shop-search');
+      input.value = '';
+      handleShopSearch('');
+      input.focus();
+    }
+
+    function setShopType(type) {
+      state.shopType = type;
+      document.getElementById('toggle-authorized').classList.toggle('active', type === 'authorized');
+      document.getElementById('toggle-unauthorized').classList.toggle('active', type === 'unauthorized');
+      renderShops();
+    }
+
+    /** Scores a shop by specialty & keyword match against the search query, plus star rating. */
+    function scoreShop(shop, query) {
+      const q = query.trim().toLowerCase();
+      if (!q) return shop.rating;
+
+      const tokens = q.split(/[\s,/\-]+/).filter((t) => t.length >= 2);
+      let score = 0;
+
+      if (shop.specialty.toLowerCase().includes(q)) score += 30;
+      if (shop.name.toLowerCase().includes(q)) score += 20;
+
+      tokens.forEach((token) => {
+        if (shop.specialty.toLowerCase().includes(token)) score += 15;
+        if (shop.name.toLowerCase().includes(token)) score += 10;
+        shop.keywords.forEach((kw) => {
+          if (kw.includes(token) || token.includes(kw)) score += 8;
+        });
+      });
+
+      // Add star rating as tie-breaker
+      return score + shop.rating;
+    }
+
+    function renderShops() {
+      const listEl = document.getElementById('shops-list');
+      const query = state.shopQuery.trim();
+
+      // Filter strictly by the active Authorized / Unauthorized toggle
+      const filtered = SHOPS
+        .filter((s) => s.type === state.shopType)
+        .map((s) => ({ ...s, score: scoreShop(s, query) }))
+        .sort((a, b) => b.score - a.score || b.rating - a.rating);
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">No shops found.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((shop, index) => {
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.name + ' ' + shop.location)}`;
+        const rankBadge = query ? `<span class="rank-tag">#${index + 1}</span>` : '';
+
+        return `
+          <article class="shop-card">
+            <div class="shop-top">
+              <div class="shop-title-group">
+                ${rankBadge}
+                <h3 class="shop-name">${shop.name}</h3>
+              </div>
+              <div class="shop-rating"><span>★</span>${shop.rating.toFixed(1)}</div>
+            </div>
+
+            <div class="shop-meta">${shop.location}</div>
+
+            <div class="shop-specialty">
+              <span>${shop.specialty}</span>
+              <span class="shop-price">${shop.price}</span>
+            </div>
+
+            <div class="shop-actions">
+              <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                Directions
+              </a>
+              <a href="tel:${shop.phone}" class="btn btn-secondary">
+                Call
+              </a>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    /* ==========================================================
+       7. TAB 2: DIAGNOSE LOGIC
+    ========================================================== */
+    function renderDeviceButtons() {
+      const container = document.getElementById('device-buttons');
+      container.innerHTML = DEVICES.map((dev) => `
+        <button
+          class="device-btn ${state.selectedDevice === dev ? 'active' : ''}"
+          onclick="selectDevice('${dev}')"
+        >${dev}</button>
+      `).join('');
+    }
+
+    function selectDevice(device) {
+      state.selectedDevice = device;
+      const issues = DIAGNOSE_GUIDES[device] || [];
+      state.selectedIssueId = issues.length ? issues[0].id : null;
+      state.checkedSteps = {};
+      renderDeviceButtons();
+      renderIssueDropdown();
+      renderDiagnoseStep2();
+    }
+
+    function renderIssueDropdown() {
+      const selectEl = document.getElementById('issue-select');
+      const issues = DIAGNOSE_GUIDES[state.selectedDevice] || [];
+      selectEl.innerHTML = issues.map((issue) => `
+        <option value="${issue.id}" ${issue.id === state.selectedIssueId ? 'selected' : ''}>
+          ${issue.label}
+        </option>
+      `).join('');
+    }
+
+    function selectIssue(issueId) {
+      state.selectedIssueId = issueId;
+      state.checkedSteps = {};
+      renderDiagnoseStep2();
+    }
+
+    /** Matches free-text user description to the closest diagnostic guide. */
+    function matchCustomIssue() {
+      const input = document.getElementById('custom-issue-input');
+      const text = input.value.trim().toLowerCase();
+      if (!text) return;
+
+      let matchedDevice = state.selectedDevice;
+      let matchedId = state.selectedIssueId;
+
+      if (text.includes('fan') || text.includes('heat') || text.includes('hot')) {
+        matchedDevice = 'Laptop'; matchedId = 'laptop-fan';
+      } else if (text.includes('slow') || text.includes('ram') || text.includes('ssd') || text.includes('lag')) {
+        matchedDevice = 'Laptop'; matchedId = 'laptop-slow';
+      } else if (text.includes('screen') || text.includes('crack') || text.includes('touch') || text.includes('display')) {
+        matchedDevice = 'Phone'; matchedId = 'phone-screen';
+      } else if (text.includes('battery') || text.includes('drain') || text.includes('dead')) {
+        matchedDevice = 'Phone'; matchedId = 'phone-battery';
+      } else if (text.includes('earphone') || text.includes('headphone') || text.includes('jack') || text.includes('sound')) {
+        matchedDevice = 'Earphones'; matchedId = 'earphone-jack';
+      } else if (text.includes('charger') || text.includes('adapter') || text.includes('cable')) {
+        matchedDevice = 'Charger'; matchedId = 'charger-dead';
+      } else if (text.includes('port') || text.includes('loose') || text.includes('charging')) {
+        matchedDevice = 'Phone'; matchedId = 'phone-port';
+      }
+
+      state.selectedDevice = matchedDevice;
+      state.selectedIssueId = matchedId;
+      state.checkedSteps = {};
+
+      renderDeviceButtons();
+      renderIssueDropdown();
+      renderDiagnoseStep2();
+
+      document.getElementById('diagnose-step-2').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function toggleCheckStep(index) {
+      state.checkedSteps[index] = !state.checkedSteps[index];
+      renderDiagnoseStep2();
+    }
+
+    function renderDiagnoseStep2() {
+      const container = document.getElementById('diagnose-step-2');
+      const issues = DIAGNOSE_GUIDES[state.selectedDevice] || [];
+      const current = issues.find((i) => i.id === state.selectedIssueId);
+
+      if (!current) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'block';
+      container.innerHTML = `
+        <h2 class="step-heading">2. How to check it</h2>
+
+        <div class="cause-box">
+          <span class="label" style="margin-bottom: 4px;">Likely Cause</span>
+          <p>${current.cause}</p>
+        </div>
+
+        <span class="label">Step-by-Step Check</span>
+        <ul class="checklist">
+          ${current.steps.map((step, idx) => {
+            const done = !!state.checkedSteps[idx];
+            return `
+              <li class="check-item ${done ? 'done' : ''}" onclick="toggleCheckStep(${idx})">
+                <input type="checkbox" ${done ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheckStep(${idx});" />
+                <div>
+                  <div class="check-text">${idx + 1}. ${step.text}</div>
+                  <span class="tool-note">${step.tool}</span>
+                </div>
+              </li>
+            `;
+          }).join('')}
+        </ul>
+
+        <div class="diag-actions">
+          <button class="btn btn-primary" onclick="jumpToSelfRepair('${current.repairId}')">
+            Try Self Repair
+          </button>
+          <button class="btn btn-secondary" onclick="jumpToNearbyShops('${current.searchQuery}')">
+            Find Nearby Shops
+          </button>
+        </div>
+      `;
+    }
+
+    function jumpToSelfRepair(repairId) {
+      state.selectedRepairId = repairId;
+      state.repairStepsOpen = false;
+      document.getElementById('repair-select').value = repairId;
+      renderRepairCard();
+      switchTab('repair');
+    }
+
+    function jumpToNearbyShops(query) {
+      const input = document.getElementById('shop-search');
+      input.value = query;
+      handleShopSearch(query);
+      switchTab('shops');
+    }
+
+    /* ==========================================================
+       8. TAB 3: SELF REPAIR LOGIC
+    ========================================================== */
+    function renderRepairSelect() {
+      const selectEl = document.getElementById('repair-select');
+      selectEl.innerHTML = REPAIR_GUIDES.map((g) => `
+        <option value="${g.id}" ${g.id === state.selectedRepairId ? 'selected' : ''}>
+          ${g.title}
+        </option>
+      `).join('');
+    }
+
+    function selectRepairGuide(id) {
+      state.selectedRepairId = id;
+      state.repairStepsOpen = false;
+      renderRepairCard();
+    }
+
+    function toggleRepairSteps() {
+      state.repairStepsOpen = !state.repairStepsOpen;
+      const list = document.getElementById('repair-steps-list');
+      const arrow = document.getElementById('repair-steps-arrow');
+      if (list) list.classList.toggle('open', state.repairStepsOpen);
+      if (arrow) arrow.textContent = state.repairStepsOpen ? '▲' : '▼';
+    }
+
+    function renderRepairCard() {
+      const container = document.getElementById('repair-card');
+      const guide = REPAIR_GUIDES.find((g) => g.id === state.selectedRepairId) || REPAIR_GUIDES[0];
+      const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(guide.video.query)}`;
+
+      container.innerHTML = `
+        <div class="guide-header">
+          <h2 class="guide-title">${guide.title}</h2>
+          <p class="guide-sub">${guide.meta}</p>
+        </div>
+
+        <!-- 1. Parts Needed -->
+        <div class="guide-section">
+          <span class="label">Parts Needed</span>
+          <ul class="simple-list">
+            ${guide.parts.map((p) => `
+              <li>
+                <span>${p.name}</span>
+                <span class="item-muted">${p.cost}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <!-- 2. Tools Used -->
+        <div class="guide-section">
+          <span class="label">Tools Used</span>
+          <ul class="simple-list">
+            ${guide.tools.map((t) => `
+              <li>
+                <span>${t.name}</span>
+                ${t.atStation ? '<span class="station-tag">At FixBridge</span>' : ''}
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+
+        <!-- 3. YouTube Tutorial -->
+        <div class="guide-section">
+          <span class="label">YouTube Tutorial</span>
+          <a href="${ytUrl}" target="_blank" rel="noopener noreferrer" class="yt-card">
+            <div class="yt-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF">
+                <polygon points="8 5 19 12 8 19 8 5"></polygon>
+              </svg>
+            </div>
+            <div class="yt-meta">
+              <div class="yt-title">${guide.video.title}</div>
+              <div class="yt-channel">${guide.video.channel}</div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Collapsible Step-by-Step Instructions -->
+        <div class="guide-section">
+          <button class="collapsible-btn" onclick="toggleRepairSteps()">
+            <span>View Step-by-Step Instructions</span>
+            <span id="repair-steps-arrow">${state.repairStepsOpen ? '▲' : '▼'}</span>
+          </button>
+          <ol id="repair-steps-list" class="steps-ol ${state.repairStepsOpen ? 'open' : ''}">
+            ${guide.steps.map((s) => `<li>${s}</li>`).join('')}
+          </ol>
+        </div>
+      `;
+    }
+
+    /* ==========================================================
+       9. INITIALIZE APP
+    ========================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderQuickChips();
+      renderShops();
+
+      renderDeviceButtons();
+      renderIssueDropdown();
+      renderDiagnoseStep2();
+
+      renderRepairSelect();
+      renderRepairCard();
+    });
+  </script>
+</body>
+</html>
